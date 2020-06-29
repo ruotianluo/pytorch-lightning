@@ -39,14 +39,14 @@ jobs:
     # https://docs.conda.io/projects/conda/en/4.6.0/_downloads/52a95608c49671267e40c689e0bc00ca/conda-cheatsheet.pdf
     # https://gist.github.com/mwouts/9842452d020c08faf9e84a3bba38a66f
     - name: Setup Miniconda
-        uses: goanpeca/setup-miniconda@v1
-        with:
+      uses: goanpeca/setup-miniconda@v1
+      with:
           auto-update-conda: true
           auto-activate-base: false
           miniconda-version: 'latest'
           python-version: ${{ matrix.python-version }}
           environment-file: environment.yml
-          activate-environment: jupytext-dev
+          activate-environment: ci-torch
 
     # TODO: add conda/pip caching
     # https://github.com/actions/cache/blob/master/examples.md#multiple-oss-in-a-workflow
