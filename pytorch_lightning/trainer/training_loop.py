@@ -186,7 +186,7 @@ class TrainLoop:
         # todo: specify the possible exception
         with suppress(Exception):
             # set seed for distributed sampler (enables shuffling for each epoch)
-            self.trainer.train_dataloader.sampler.set_epoch(epoch)
+            self.trainer.train_dataloader.sampler.set_epoch(self.global_step)
 
         # changing gradient according accumulation_scheduler
         self.trainer.accumulation_scheduler.on_train_epoch_start(self.trainer, self.trainer.lightning_module)
