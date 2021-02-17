@@ -117,7 +117,10 @@ class CheckpointConnector:
         model.on_load_checkpoint(checkpoint)
 
         # restore model state_dict
-        model.load_state_dict(checkpoint['state_dict'])
+        try:
+            model.load_state_dict(checkpoint['state_dict'])
+        except:
+            model.load_state_dict(checkpoint['state_dict'], strict=False)
 
     def restore_training_state(self, checkpoint, load_optimizer_states: bool = True):
         """
@@ -159,7 +162,8 @@ class CheckpointConnector:
             you restored a checkpoint with current_epoch={self.trainer.current_epoch}
             but the Trainer(max_epochs={self.trainer.max_epochs})
             """
-            raise MisconfigurationException(m)
+            if not self.trainer.testing:
+                raise MisconfigurationException(m)
 
         # Division deals with global step stepping once per accumulated batch
         # Inequality deals with different global step for odd vs even num_training_batches
