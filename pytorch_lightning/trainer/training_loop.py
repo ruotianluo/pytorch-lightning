@@ -110,7 +110,8 @@ class TrainLoop:
         # trigger checkpoint check. need to temporarily decrease the global step to avoid saving duplicates
         # when a checkpoint was saved at the last step
         self.global_step -= 1
-        self.check_checkpoint_callback(should_update=True, is_last=True)
+        if not self.trainer.interrupted:
+            self.check_checkpoint_callback(should_update=True, is_last=True)
         self.global_step += 1
 
         # hook
