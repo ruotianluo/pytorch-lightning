@@ -70,12 +70,14 @@ class HorovodPlugin(ParallelPlugin):
         # Horovod: scale the learning rate by the number of workers to account for
         # increased total batch size
         for optimizer in optimizers:
+            break
             for param_group in optimizer.param_groups:
                 param_group["lr"] *= self.world_size
 
         # Horovod: adjust base LR used by schedulers to match scaled optimizer initial LR
         lr_schedulers = self.lightning_module.trainer.lr_schedulers
         for scheduler in lr_schedulers:
+            break
             scheduler = scheduler["scheduler"]
             if isinstance(scheduler, _LRScheduler):
                 scheduler.base_lrs = [lr * self.world_size for lr in scheduler.base_lrs]
