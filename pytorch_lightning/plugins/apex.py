@@ -13,6 +13,7 @@
 # limitations under the License.
 import math
 from typing import List, Tuple, Union
+import types
 
 import torch
 from torch.optim.optimizer import Optimizer
@@ -24,6 +25,52 @@ from pytorch_lightning.utilities.distributed import rank_zero_warn
 
 if APEX_AVAILABLE:
     from apex import amp
+
+
+def _patch_optimizer(optimizer):
+    if not hasattr(optimizer, '_amp_stash'):
+        # No need for patch
+        return
+    old_lazy_init_with_master_weights = optimizer._lazy_init_maybe_master_weights
+    def new_lazy_init_with_master_weights(self):
+        old_lazy_init_with_master_weights()
+        self._amp_stash.lazy_init_called = True  # nasty, do this, because in load_state_dict we need it load the master param
+        if hasattr(self, '_lazy_saved_state_dict'):
+            self.load_state_dict(self._lazy_saved_state_dict)
+            del self._lazy_saved_state_dict
+    optimizer._lazy_init_maybe_master_weights = types.MethodType(new_lazy_init_with_master_weights, optimizer)
+
+    old_state_dict = optimizer.state_dict
+    def new_state_dict(self):
+        state_dict = old_state_dict()
+        if self._amp_stash.lazy_init_called:
+            # We also need to save the master_params
+            state_dict['master_params'] = [p.data.clone() for group in optimizer.param_groups for p in group['params']]
+        return state_dict
+    optimizer.state_dict = types.MethodType(new_state_dict, optimizer)
+
+    old_load_state_dict = optimizer.load_state_dict
+    def new_load_state_dict(self, state_dict):
+        if not self._amp_stash.lazy_init_called and not hasattr(self, '_lazy_saved_state_dict'):
+            """
+            Note: here we assume the first time optimizer call load_state_dict is the checkpoint;
+            We assume this is because there is a load_state_dict in lazy_init, and it's not trivial to remove it.
+            So we add this assumption to make sure that we are resuming from real checkpoint, not the self.state_dict() from lazy_init.
+            """
+
+            # save it, load it after lazy init.
+            self._lazy_saved_state_dict = state_dict
+            old_load_state_dict(state_dict)
+            return
+
+        if self._amp_stash.lazy_init_called and 'master_params' in state_dict:
+            # initilized already
+            master_params = state_dict.pop('master_params')
+            for group in optimizer.param_groups:
+                for p in group['params']:
+                    p.data.copy_(master_params.pop(0))
+        old_load_state_dict(state_dict)
+    optimizer.load_state_dict = types.MethodType(new_load_state_dict, optimizer)
 
 
 class ApexPlugin(PrecisionPlugin):
@@ -98,6 +145,8 @@ class ApexPlugin(PrecisionPlugin):
                     return model, optimizers
         """
         model, optimizers = amp.initialize(model, optimizers, opt_level=amp_level)
+        for optimizer in optimizers:
+            _patch_optimizer(optimizer)
         return model, optimizers
 
     def clip_gradients(self, grad_clip_val: Union[int, float], optimizer: Optimizer, norm_type: float):
