@@ -364,11 +364,11 @@ class ModelCheckpoint(Callback):
             raise ValueError(".save_function() not set")
 
     def check_monitor_top_k(self, current) -> bool:
-        if current is None:
-            return False
-
         if self.save_top_k == -1:
             return True
+
+        if current is None:
+            return False
 
         less_than_k_models = len(self.best_k_models) < self.save_top_k
         if less_than_k_models:
@@ -639,10 +639,17 @@ class ModelCheckpoint(Callback):
         self.best_model_score = self.best_k_models[self.best_model_path]
 
         if self.verbose:
-            rank_zero_info(
-                f"Epoch {epoch:d}, global step {step:d}: {self.monitor} reached {current:0.5f}"
-                f' (best {self.best_model_score:0.5f}), saving model to "{filepath}" as top {k}'
-            )
+            if current:
+                rank_zero_info(
+                    f"Epoch {epoch:d}, global step {step:d}: {self.monitor} reached {current:0.5f}"
+                    f' (best {self.best_model_score:0.5f}), saving model to "{filepath}" as top {k}'
+                )
+            else:
+                assert self.save_top_k == -1
+                rank_zero_info(
+                    f'Epoch {epoch:d}, global step {step:d}: saving model to "{filepath}"'
+                )
+
         self._save_model(filepath, trainer, pl_module)
 
         if del_filepath is not None and filepath != del_filepath:
