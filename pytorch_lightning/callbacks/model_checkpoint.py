@@ -609,6 +609,9 @@ class ModelCheckpoint(Callback):
         pl_module,
         ckpt_name_metrics
     ):
+        if current is None:
+            current = torch.tensor(float('nan'))
+
         k = len(self.best_k_models) + 1 if self.save_top_k == -1 else self.save_top_k
 
         del_filepath = None
@@ -639,16 +642,10 @@ class ModelCheckpoint(Callback):
         self.best_model_score = self.best_k_models[self.best_model_path]
 
         if self.verbose:
-            if current:
-                rank_zero_info(
-                    f"Epoch {epoch:d}, global step {step:d}: {self.monitor} reached {current:0.5f}"
-                    f' (best {self.best_model_score:0.5f}), saving model to "{filepath}" as top {k}'
-                )
-            else:
-                assert self.save_top_k == -1
-                rank_zero_info(
-                    f'Epoch {epoch:d}, global step {step:d}: saving model to "{filepath}"'
-                )
+            rank_zero_info(
+                f"Epoch {epoch:d}, global step {step:d}: {self.monitor} reached {current:0.5f}"
+                f' (best {self.best_model_score:0.5f}), saving model to "{filepath}" as top {k}'
+            )
 
         self._save_model(filepath, trainer, pl_module)
 
