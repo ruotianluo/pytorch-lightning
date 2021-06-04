@@ -155,6 +155,7 @@ class CheckpointConnector:
 
         self.trainer.train_loop.global_step = checkpoint['global_step']
         self.trainer.train_loop.current_epoch = checkpoint['epoch']
+        self.trainer.train_loop.total_batch_idx = checkpoint.get('total_batch_idx', 0)
 
         # crash if max_epochs is lower then the current epoch from the checkpoint
         if self.trainer.max_epochs is not None and self.trainer.current_epoch > self.trainer.max_epochs:
@@ -265,6 +266,7 @@ class CheckpointConnector:
         # dump epoch/global_step/pytorch-lightning_version
         current_epoch = self.trainer.current_epoch
         global_step = self.trainer.global_step
+        total_batch_idx = self.trainer.total_batch_idx
         has_reached_max_steps = self.trainer.max_steps and self.trainer.max_steps <= global_step
 
         global_step += 1
@@ -276,6 +278,7 @@ class CheckpointConnector:
         checkpoint = {
             'epoch': current_epoch,
             'global_step': global_step,
+            'total_batch_idx': total_batch_idx,
             'pytorch-lightning_version': pytorch_lightning.__version__,
             'state_dict': self.trainer.accelerator.lightning_module_state_dict(),
         }
