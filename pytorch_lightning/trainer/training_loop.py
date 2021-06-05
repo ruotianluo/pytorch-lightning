@@ -906,9 +906,11 @@ class TrainLoop:
         # TODO: let training/eval loop handle logic around limit_*_batches and val_check_batch
         is_val_check_batch = is_last_batch
         if isinstance(self.trainer.limit_train_batches, int) and is_infinite_dataset:
-            is_val_check_batch = (batch_idx + 1) % self.trainer.limit_train_batches == 0
+            is_val_check_batch = (batch_idx + 1) % self.trainer.limit_train_batches == 0 or \
+                self.total_batch_idx % self.trainer.limit_train_batches == 0  # total_batch_idx is how many batch done.
         elif self.trainer.val_check_batch != float('inf'):
-            is_val_check_batch = (batch_idx + 1) % self.trainer.val_check_batch == 0
+            is_val_check_batch = (batch_idx + 1) % self.trainer.val_check_batch == 0 or \
+                self.total_batch_idx % self.trainer.limit_train_batches == 0
         return is_val_check_batch
 
     def _build_kwargs(self, batch, batch_idx, opt_idx, hiddens):
