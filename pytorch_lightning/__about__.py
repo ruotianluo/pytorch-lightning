@@ -2,7 +2,7 @@ import time
 
 _this_year = time.strftime("%Y")
 __version__ = '1.3.4'
-__author__ = 'William Falcon et al.'
+__author__ = 'William Falcon et al. and rt'
 __author_email__ = 'waf2107@columbia.edu'
 __license__ = 'Apache-2.0'
 __copyright__ = f'Copyright (c) 2018-{_this_year}, {__author__}.'
