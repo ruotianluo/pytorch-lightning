@@ -912,15 +912,12 @@ class TrainLoop:
         # TODO: let training/eval loop handle logic around limit_*_batches and val_check_batch
         is_val_check_batch = False
         if isinstance(self.trainer.limit_train_batches, int) and self.trainer.val_check_batch == float('inf'):
-            is_val_check_batch = (batch_idx + 1) % self.trainer.limit_train_batches == 0 or \
-                self.trainer.total_batch_idx % self.trainer.limit_train_batches == 0  # total_batch_idx is how many batch done.
+            is_val_check_batch = (batch_idx + 1) % self.trainer.limit_train_batches == 0
         elif self.trainer.val_check_batch != float('inf'):
-            is_val_check_batch = (batch_idx + 1) % self.trainer.val_check_batch == 0 or \
-                self.trainer.total_batch_idx % self.trainer.val_check_batch == 0
+            is_val_check_batch = (batch_idx + 1) % self.trainer.val_check_batch == 0
 
         # Note: num_training_batches is also inf for iterable datasets with no length defined
-        epoch_end_val_check = (batch_idx + 1) % self.trainer.num_training_batches == 0 or \
-            self.trainer.total_batch_idx % self.trainer.num_training_batches == 0
+        epoch_end_val_check = (batch_idx + 1) % self.trainer.num_training_batches == 0
         is_last_batch_for_infinite_dataset = is_last_batch and self.trainer.val_check_batch == float("inf")
 
         if on_epoch:

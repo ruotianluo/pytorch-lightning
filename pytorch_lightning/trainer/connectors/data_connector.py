@@ -43,8 +43,11 @@ class DataConnector(object):
         self.trainer._is_data_prepared = False
 
     def get_profiled_train_dataloader(self, train_dataloader):
+        # We feed batch_idx because the model may resume of middle-of-epoch checkpoint.
+        # the length of train_dataloader has been modified by set_epoch at this point.
+        start_batch_idx = self.trainer.num_training_batches - len(train_dataloader)
         profiled_dl = self.trainer.profiler.profile_iterable(
-            enumerate(prefetch_iterator(train_dataloader)), "get_train_batch"
+            enumerate(prefetch_iterator(train_dataloader), start_batch_idx), "get_train_batch"
         )
         return profiled_dl
 
